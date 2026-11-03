@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ludo Kung 👑</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { background: #3e2723 url('https://images.unsplash.com/photo-1546484475-7f7bd55792da?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; overflow-x: hidden; padding-bottom: 10px; }
+        
+        header { width: 100%; max-width: 550px; display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); border-bottom: 2px solid #ffb300; }
+        h1 { font-size: 22px; color: #ffd700; text-shadow: 2px 2px 4px #000; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+        .head-btns { display: flex; gap: 8px; }
+        .btn { background: #ff9800; color: #000; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 13px; box-shadow: 0 3px 0 #b78103; transition: all 0.1s; }
+        .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #b78103; }
+        .btn-red { background: #f44336; color: #fff; box-shadow: 0 3px 0 #b71c1c; }
+
+        /* Setup Screen */
+        #setup-screen { background: rgba(20, 10, 5, 0.95); border: 2px solid #ffb300; border-radius: 12px; padding: 25px 20px; max-width: 400px; width: 90%; text-align: center; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        #setup-screen h2 { color: #ffd700; margin-bottom: 15px; font-size: 20px; }
+        select { width: 100%; padding: 12px; margin: 10px 0 20px; border-radius: 8px; border: 2px solid #ffb300; background: #2c1b18; color: #fff; font-size: 16px; outline: none; }
+        
+        /* Game Screen Area */
+        #game-screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 520px; padding: 5px; margin: auto; }
+        
+        /* 15x15 Ludo Board */
+        .board-wrapper { position: relative; width: 100%; max-width: 480px; aspect-ratio: 1/1; background: #fff; border: 8px solid #4a2c11; border-radius: 8px; box-shadow: 0 12px 25px rgba(0,0,0,0.7); }
+        #ludo-board { display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); width: 100%; height: 100%; position: relative; background: #fff; }
+        
+        .cell { border: 1px solid #777; position: relative; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+        .star-cell::after { content: '⭐'; font-size: clamp(9px, 2.2vw, 13px); position: absolute; opacity: 0.85; }
+        .arrow-cell::after { content: '➔'; font-size: clamp(9px, 2.2vw, 13px); position: absolute; font-weight: bold; }
+        
+        /* Yard Bases */
+        .yard { position: relative; border: 2px solid #000; display: flex; align-items: center; justify-content: center; }
+        .yard-red { background: #e53935; grid-area: 1 / 1 / 7 / 7; }
+        .yard-green { background: #43a047; grid-area: 1 / 10 / 7 / 16; }
+        .yard-yellow { background: #fdd835; grid-area: 10 / 10 / 16 / 16; }
+        .yard-blue { background: #1e88e5; grid-area: 10 / 1 / 16 / 7; }
+        
+        .yard-inner { width: 70%; height: 70%; background: #fff; border-radius: 12px; border: 3px solid #000; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 8px; }
+        .base-spot { background: #fff; border-radius: 50%; border: 3px solid #333; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); position: relative; }
+        .yard-red .base-spot { border-color: #e53935; }
+        .yard-green .base-spot { border-color: #43a047; }
+        .yard-yellow .base-spot { border-color: #fdd835; }
+        .yard-blue .base-spot { border-color: #1e88e5; }
+
+        /* Triangle Home Center */
+        .home-center { grid-area: 7 / 7 / 10 / 10; position: relative; background: #fff; border: 1px solid #000; overflow: hidden; }
+        .tri-red { position: absolute; width: 50%; height: 100%; top: 0; left: 0; clip-path: polygon(0 0, 100% 50%, 0 100%); background: #e53935; }
+        .tri-green { position: absolute; width: 100%; height: 50%; top: 0; left: 0; clip-path: polygon(0 0, 100% 0, 50% 100%); background: #43a047; }
+        .tri-yellow { position: absolute; width: 50%; height: 100%; top: 0; right: 0; clip-path: polygon(100% 0, 100% 100%, 0 50%); background: #fdd835; }
+        .tri-blue { position: absolute; width: 100%; height: 50%; bottom: 0; left: 0; clip-path: polygon(0 100%, 100% 100%, 50% 0); background: #1e88e5; }
+        .home-crown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; z-index: 2; }
+
+        /* Small Token Size */
+        .token { width: 38%; height: 38%; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5); cursor: pointer; position: absolute; z-index: 10; transition: all 0.15s ease-in-out; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; color: #fff; text-shadow: 0 1px 2px #000; }
+        .token-red { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c62828); }
+        .token-green { background: radial-gradient(circle at 30% 30%, #66bb6a, #2e7d32); }
+        .token-yellow { background: radial-gradient(circle at 30% 30%, #fff176, #f57f17); color: #000; text-shadow: none; }
+        .token-blue { background: radial-gradient(circle at 30% 30%, #42a5f5, #1565c0); }
+        .token.highlight { animation: pulse 0.6s infinite alternate; border: 2px solid #ffd700; z-index: 20; }
+        @keyframes pulse { from { transform: scale(1); box-shadow: 0 0 4px #ffd700; } to { transform: scale(1.25); box-shadow: 0 0 10px #ffd700; } }
+
+        /* Corner Dices */
+        .player-dice-box { position: absolute; width: 38px; height: 38px; background: #fff; border: 3px solid #333; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.4); z-index: 30; color: #000; }
+        .dice-red { top: -4px; left: -4px; border-color: #b71c1c; }
+        .dice-green { top: -4px; right: -4px; border-color: #1b5e20; }
+        .dice-yellow { bottom: -4px; right: -4px; border-color: #f57f17; }
+        .dice-blue { bottom: -4px; left: -4px; border-color: #0d47a1; }
+        .player-dice-box.active-dice { animation: diceBlink 0.8s infinite alternate; border-width: 4px; }
+        @keyframes diceBlink { from { transform: scale(1); box-shadow: 0 0 4px #ffd700; } to { transform: scale(1.15); box-shadow: 0 0 12px #ffd700; } }
+
+        /* Turn Bar */
+        #turn-bar { margin-top: 8px; width: 100%; max-width: 480px; padding: 8px 12px; background: rgba(0,0,0,0.7); border-radius: 8px; border: 1px solid #ffb300; display: flex; justify-content: space-between; align-items: center; }
+        #status-text { font-size: 14px; font-weight: bold; color: #ffd700; }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: #2c1b18; border: 2px solid #ffb300; border-radius: 12px; padding: 20px; width: 90%; max-width: 380px; text-align: center; color: #fff; }
+        .modal h3 { color: #ffd700; margin-bottom: 15px; font-size: 18px; }
+        
+        #fireworks-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 90; }
+
+        /* Designer Branding Footer */
+        .designer-credit { margin-top: 10px; text-align: center; font-size: 13px; font-weight: bold; color: #ffd700; text-shadow: 1px 1px 3px #000; background: rgba(0, 0, 0, 0.7); padding: 5px 15px; border-radius: 20px; border: 1px solid #ffb300; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>👑 Ludo Kung</h1>
+        <div class="head-btns">
+            <button class="btn btn-red" onclick="askNewGame()" id="txt-newgame">नया गेम</button>
+            <button class="btn" onclick="toggleSettings()">⚙️</button>
+        </div>
+    </header>
+
+    <!-- Setup Screen -->
+    <div id="setup-screen">
+        <h2 id="txt-choosemode">गेम मोड चुनें</h2>
+        <select id="playerSelect">
+            <option value="1">1 Player (Vs Computer Bot)</option>
+            <option value="2">2 Players (Dost / Local)</option>
+            <option value="3">3 Players (Dost / Local)</option>
+            <option value="4" selected>4 Players (Dost / Local)</option>
+        </select>
+        <button class="btn" style="width: 100%; padding: 12px; font-size: 16px;" onclick="initGame(false)" id="txt-startbtn">गेम शुरू करें 🚀</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen">
+        <div class="board-wrapper">
+            <div id="ludo-board"></div>
+            
+            <div id="dice-0" class="player-dice-box dice-red" onclick="handleDiceClick(0)">🎲</div>
+            <div id="dice-1" class="player-dice-box dice-green" onclick="handleDiceClick(1)">🎲</div>
+            <div id="dice-2" class="player-dice-box dice-yellow" onclick="handleDiceClick(2)">🎲</div>
+            <div id="dice-3" class="player-dice-box dice-blue" onclick="handleDiceClick(3)">🎲</div>
+        </div>
+
+        <div id="turn-bar">
+            <span id="status-text">Player 1 (Red) की बारी</span>
+            <span id="dice-result-val" style="font-size: 18px; font-weight: bold; color: #fff;">-</span>
+        </div>
+
+        <div class="designer-credit">Designed by AMIT KUMAR (DAPSAURA)</div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h3>⚙️ गेम सेटिंग्स</h3>
+            <div style="text-align: left; margin: 15px 0;">
+                <label style="display: block; margin-bottom: 10px;"><input type="checkbox" id="soundFx" checked> 🔊 Sound FX (Kharr & Tuk Sound)</label>
+                <label style="display: block; margin-top: 10px;">🌐 Bhasha / Language: 
+                    <select id="langSelect" onchange="changeLanguage()" style="margin-top: 5px; padding: 6px;">
+                        <option value="hi" selected>Hinglish / Hindi</option>
+                        <option value="en">English</option>
+                    </select>
+                </label>
+            </div>
+            <button class="btn" onclick="toggleSettings()" id="txt-close">बंद करें</button>
+        </div>
+    </div>
+
+    <!-- Resume Game Modal -->
+    <div id="resume-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="txt-resumever">पिछला गेम मिला!</h3>
+            <p style="margin-bottom: 15px;" id="txt-resumequest">क्या आप पिछला खेल जारी रखना चाहते हैं?</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="flex:1" onclick="resumeGame()" id="txt-resume">जारी रखें</button>
+                <button class="btn btn-red" style="flex:1" onclick="startFreshGame()" id="txt-fresh">नया गेम</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Winner Banner -->
+    <div id="winner-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="winner-title" style="color: #ffd700; font-size: 22px;">🎉 बधाई हो! 🎉</h2>
+            <p id="winner-msg" style="margin: 15px 0; font-size: 16px;"></p>
+            <button class="btn" onclick="closeWinnerModal()" id="txt-continue">खेल जारी रखें ➡️</button>
+        </div>
+    </div>
+
+    <canvas id="fireworks-canvas"></canvas>
+
+    <script>
+        let currentLang = 'hi';
+        const LANG_TEXTS = {
+            en: {
+                newGame: "New Game",
+                chooseMode: "Choose Game Mode",
+                start: "Start Game 🚀",
+                close: "Close",
+                resumeFound: "Saved Game Found!",
+                resumeQ: "Do you want to continue your previous game?",
+                resume: "Resume",
+                fresh: "New Game",
+                continueGame: "Continue Game ➡️",
+                turn: (p, c) => `Player ${p + 1} (${c}) Turn`,
+                botTurn: "Computer Bot Turn...",
+                finished: (p, c, r) => `Player ${p + 1} (${c}) finished as ${r} Winner!`,
+                gameComplete: "Game Completed!",
+                extraTurn: (p, c) => `Player ${p + 1} (${c}) got an extra turn!`,
+                threeSixes: "3 Sixes in a row! Turn cancelled.",
+                confirmNew: "Do you want to leave current game and start new?"
+            },
+            hi: {
+                newGame: "नया गेम",
+                chooseMode: "गेम मोड चुनें",
+                start: "गेम शुरू करें 🚀",
+                close: "बंद करें",
+                resumeFound: "पिछला अधूरा गेम मिला!",
+                resumeQ: "क्या आप पिछला खेल जारी रखना चाहते हैं?",
+                resume: "जारी रखें",
+                fresh: "नया गेम",
+                continueGame: "खेल जारी रखें ➡️",
+                turn: (p, c) => `Player ${p + 1} (${c}) की बारी`,
+                botTurn: "Computer Bot की बारी...",
+                finished: (p, c, r) => `Player ${p + 1} (${c}) ${r} Winner बन गए हैं!`,
+                gameComplete: "गेम पूरा हो गया!",
+                extraTurn: (p, c) => `Player ${p + 1} (${c}) को एक और मौका मिला!`,
+                threeSixes: "लगातार 3 बार 6 आया! चाल रद्द हो गई।",
+                confirmNew: "क्या आप वर्तमान गेम छोड़कर नया गेम शुरू करना चाहते हैं?"
+            }
+        };
+
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelect').value;
+            const t = LANG_TEXTS[currentLang];
+            document.getElementById('txt-newgame').innerText = t.newGame;
+            document.getElementById('txt-choosemode').innerText = t.chooseMode;
+            document.getElementById('txt-startbtn').innerText = t.start;
+            document.getElementById('txt-close').innerText = t.close;
+            document.getElementById('txt-resumever').innerText = t.resumeFound;
+            document.getElementById('txt-resumequest').innerText = t.resumeQ;
+            document.getElementById('txt-resume').innerText = t.resume;
+            document.getElementById('txt-fresh').innerText = t.fresh;
+            document.getElementById('txt-continue').innerText = t.continueGame;
+            updateUI();
+        }
+
+        /* --- Audio Synthesizer --- */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (!document.getElementById('soundFx').checked) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const now = audioCtx.currentTime;
+            if (type === 'kharr') {
+                for (let i = 0; i < 5; i++) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(120 + Math.random() * 100, now + i * 0.04);
+                    gain.gain.setValueAtTime(0.15, now + i * 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + (i + 1) * 0.04);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + i * 0.04);
+                    osc.stop(now + (i + 1) * 0.04);
+                }
+            } else if (type === 'tuk') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(450, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'cut') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.25);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'win') {
+                const notes = [261, 329, 392, 523];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.12);
+                    osc.stop(now + idx * 0.12 + 0.25);
+                });
+            }
+        }
+
+        function fairRandomDice() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+
+        const PATHS = {
+            0: [
+                [6,1],[6,2],[6,3],[6,4],[6,5],
+                [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],
+                [1,8],[2,8],[3,8],[4,8],[5,8],
+                [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],
+                [8,13],[8,12],[8,11],[8,10],[8,9],
+                [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],
+                [13,6],[12,6],[11,6],[10,6],[9,6],
+                [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],
+                [7,1],[7,2],[7,3],[7,4],[7,5],[7,6]
+            ],
+            1: [
+                [1,8],[2,8],[3,8],[4,8],[5,8],
+                [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],
+                [8,13],[8,12],[8,11],[8,10],[8,9],
+                [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],
+                [13,6],[12,6],[11,6],[10,6],[9,6],
+                [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[6,0],
+                [6,1],[6,2],[6,3],[6,4],[6,5],
+                [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],
+                [1,7],[2,7],[3,7],[4,7],[5,7],[6,7]
+            ],
+            2: [
+                [8,13],[8,12],[8,11],[8,10],[8,9],
+                [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],
+                [13,6],[12,6],[11,6],[10,6],[9,6],
+                [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[6,0],
+                [6,1],[6,2],[6,3],[6,4],[6,5],
+                [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],
+                [1,8],[2,8],[3,8],[4,8],[5,8],
+                [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],
+                [7,13],[7,12],[7,11],[7,10],[7,9],[7,8]
+            ],
+            3: [
+                [13,6],[12,6],[11,6],[10,6],[9,6],
+                [8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[6,0],
+                [6,1],[6,2],[6,3],[6,4],[6,5],
+                [5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],
+                [1,8],[2,8],[3,8],[4,8],[5,8],
+                [6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],
+                [8,13],[8,12],[8,11],[8,10],[8,9],
+                [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],
+                [13,7],[12,7],[11,7],[10,7],[9,7],[8,7]
+            ]
+        };
+
+        const STAR_POSITIONS = ["6,1", "2,6", "1,8", "6,12", "8,13", "12,8", "13,6", "8,2"];
+        const COLOR_NAMES = ["Red", "Green", "Yellow", "Blue"];
+
+        let activePlayersCount = 4;
+        let isVsBot = false;
+        let turn = 0;
+        let diceValue = 0;
+        let consecutiveSixes = 0;
+        let hasRolled = false;
+        let isMoving = false;
+        let winnersRank = [];
+        let tokens = [];
+
+        window.onload = function() {
+            if (localStorage.getItem('ludoKungFinalSave')) {
+                document.getElementById('resume-modal').style.display = 'flex';
+            } else {
+                document.getElementById('setup-screen').style.display = 'block';
+            }
+            initCanvasFireworks();
+        };
+
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function askNewGame() {
+            const t = LANG_TEXTS[currentLang];
+            if (confirm(t.confirmNew)) {
+                localStorage.removeItem('ludoKungFinalSave');
+                location.reload();
+            }
+        }
+
+        function startFreshGame() {
+            document.getElementById('resume-modal').style.display = 'none';
+            document.getElementById('setup-screen').style.display = 'block';
+        }
+
+        function initGame(isResume = false) {
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('resume-modal').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+
+            renderBoardHTML();
+
+            if (isResume) {
+                loadGameState();
+            } else {
+                const sel = parseInt(document.getElementById('playerSelect').value);
+                if (sel === 1) {
+                    activePlayersCount = 2; // Red (User) vs Green (Bot)
+                    isVsBot = true;
+                } else {
+                    activePlayersCount = sel;
+                    isVsBot = false;
+                }
+                
+                turn = 0;
+                consecutiveSixes = 0;
+                winnersRank = [];
+                tokens = [];
+                for (let p = 0; p < activePlayersCount; p++) {
+                    for (let i = 0; i < 4; i++) {
+                        tokens.push({ p: p, id: i, pos: -1 });
+                    }
+                }
+            }
+
+            updateUI();
+            checkAndTriggerBot();
+        }
+
+        function renderBoardHTML() {
+            const board = document.getElementById('ludo-board');
+            board.innerHTML = '';
+
+            for (let r = 0; r < 15; r++) {
+                for (let c = 0; c < 15; c++) {
+                    if (r < 6 && c < 6) continue;
+                    if (r < 6 && c > 8) continue;
+                    if (r > 8 && c > 8) continue;
+                    if (r > 8 && c < 6) continue;
+                    if (r >= 6 && r <= 8 && c >= 6 && c <= 8) continue;
+
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+
+                    if (r === 7 && c >= 1 && c <= 5) cell.style.background = '#e53935';
+                    else if (c === 7 && r >= 1 && r <= 5) cell.style.background = '#43a047';
+                    else if (r === 7 && c >= 9 && c <= 13) cell.style.background = '#fdd835';
+                    else if (c === 7 && r >= 9 && r <= 13) cell.style.background = '#1e88e5';
+                    else if (r === 6 && c === 1) { cell.style.background = '#e53935'; cell.classList.add('arrow-cell'); }
+                    else if (r === 1 && c === 8) { cell.style.background = '#43a047'; cell.classList.add('arrow-cell'); }
+                    else if (r === 8 && c === 13) { cell.style.background = '#fdd835'; cell.classList.add('arrow-cell'); }
+                    else if (r === 13 && c === 6) { cell.style.background = '#1e88e5'; cell.classList.add('arrow-cell'); }
+
+                    if (STAR_POSITIONS.includes(`${r},${c}`)) cell.classList.add('star-cell');
+
+                    board.appendChild(cell);
+                }
+            }
+
+            board.innerHTML += `
+                <div class="yard yard-red"><div class="yard-inner">${[0,1,2,3].map(i => `<div class="base-spot" id="spot-0-${i}"></div>`).join('')}</div></div>
+                <div class="yard yard-green"><div class="yard-inner">${[0,1,2,3].map(i => `<div class="base-spot" id="spot-1-${i}"></div>`).join('')}</div></div>
+                <div class="yard yard-yellow"><div class="yard-inner">${[0,1,2,3].map(i => `<div class="base-spot" id="spot-2-${i}"></div>`).join('')}</div></div>
+                <div class="yard yard-blue"><div class="yard-inner">${[0,1,2,3].map(i => `<div class="base-spot" id="spot-3-${i}"></div>`).join('')}</div></div>
+                <div class="home-center">
+                    <div class="tri-red"></div><div class="tri-green"></div><div class="tri-yellow"></div><div class="tri-blue"></div>
+                    <div class="home-crown">👑</div>
+                </div>
+            `;
+        }
+
+        function updateUI() {
+            for (let p = 0; p < 4; p++) {
+                const dBox = document.getElementById(`dice-${p}`);
+                if (p < activePlayersCount) {
+                    dBox.style.display = 'flex';
+                    if (p === turn && !winnersRank.includes(p)) {
+                        dBox.classList.add('active-dice');
+                        if (!hasRolled) dBox.innerText = '🎲';
+                    } else {
+                        dBox.classList.remove('active-dice');
+                        dBox.innerText = '🎲';
+                    }
+                } else {
+                    dBox.style.display = 'none';
+                }
+            }
+
+            const t = LANG_TEXTS[currentLang];
+            if (isVsBot && turn === 1) {
+                document.getElementById('status-text').innerText = t.botTurn;
+            } else {
+                document.getElementById('status-text').innerText = t.turn(turn, COLOR_NAMES[turn]);
+            }
+            renderTokens();
+            saveGameState();
+        }
+
+        function renderTokens() {
+            document.querySelectorAll('.token').forEach(el => el.remove());
+
+            tokens.forEach(t => {
+                const tokEl = document.createElement('div');
+                tokEl.className = `token token-${COLOR_NAMES[t.p].toLowerCase()}`;
+                tokEl.dataset.p = t.p;
+                tokEl.dataset.id = t.id;
+                tokEl.innerText = t.id + 1;
+
+                if (t.pos === -1) {
+                    const spot = document.getElementById(`spot-${t.p}-${t.id}`);
+                    if (spot) spot.appendChild(tokEl);
+                } else if (t.pos === 56) {
+                    const home = document.querySelector('.home-center');
+                    tokEl.style.position = 'absolute';
+                    const offsets = [[25,25], [60,25], [60,60], [25,60]];
+                    tokEl.style.left = offsets[t.id][0] + '%';
+                    tokEl.style.top = offsets[t.id][1] + '%';
+                    home.appendChild(tokEl);
+                } else {
+                    const coords = PATHS[t.p][t.pos];
+                    const cell = document.querySelector(`.cell[data-r="${coords[0]}"][data-c="${coords[1]}"]`);
+                    if (cell) cell.appendChild(tokEl);
+                }
+
+                tokEl.onclick = (e) => {
+                    e.stopPropagation();
+                    onTokenClick(t);
+                };
+            });
+        }
+
+        function handleDiceClick(pIdx) {
+            if (pIdx !== turn || hasRolled || isMoving) return;
+            if (winnersRank.includes(turn)) { nextTurn(); return; }
+
+            playSound('kharr');
+            hasRolled = true;
+
+            const diceBox = document.getElementById(`dice-${pIdx}`);
+            let rollCount = 0;
+            const anim = setInterval(() => {
+                diceBox.innerText = Math.floor(Math.random() * 6) + 1;
+                rollCount++;
+                if (rollCount > 8) {
+                    clearInterval(anim);
+                    diceValue = fairRandomDice();
+                    diceBox.innerText = diceValue;
+                    document.getElementById('dice-result-val').innerText = `🎲 ${diceValue}`;
+
+                    // 3 Consecutive 6s Penalty Rule
+                    if (diceValue === 6) {
+                        consecutiveSixes++;
+                        if (consecutiveSixes === 3) {
+                            const t = LANG_TEXTS[currentLang];
+                            document.getElementById('status-text').innerText = t.threeSixes;
+                            setTimeout(() => {
+                                consecutiveSixes = 0;
+                                nextTurn();
+                            }, 1200);
+                            return;
+                        }
+                    } else {
+                        consecutiveSixes = 0;
+                    }
+
+                    evaluateMoves();
+                }
+            }, 50);
+        }
+
+        function evaluateMoves() {
+            const movable = getMovableTokens(turn, diceValue);
+
+            if (movable.length === 0) {
+                setTimeout(() => {
+                    nextTurn();
+                }, 800);
+            } else if (movable.length === 1) {
+                setTimeout(() => {
+                    moveToken(movable[0]);
+                }, 400);
+            } else {
+                if (isVsBot && turn === 1) {
+                    // Bot auto pick best token
+                    setTimeout(() => {
+                        moveToken(movable[0]);
+                    }, 500);
+                } else {
+                    highlightTokens(movable);
+                }
+            }
+        }
+
+        function getMovableTokens(pIdx, val) {
+            const list = [];
+            tokens.filter(t => t.p === pIdx).forEach(t => {
+                if (t.pos === -1 && val === 6) list.push(t);
+                else if (t.pos >= 0 && t.pos + val <= 56) list.push(t);
+            });
+            return list;
+        }
+
+        function highlightTokens(list) {
+            list.forEach(t => {
+                const el = document.querySelector(`.token[data-p="${t.p}"][data-id="${t.id}"]`);
+                if (el) el.classList.add('highlight');
+            });
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.token.highlight').forEach(el => el.classList.remove('highlight'));
+        }
+
+        function onTokenClick(t) {
+            if (!hasRolled || isMoving || t.p !== turn) return;
+            const movable = getMovableTokens(turn, diceValue);
+            if (movable.some(m => m.id === t.id)) {
+                clearHighlights();
+                moveToken(t);
+            }
+        }
+
+        function moveToken(t) {
+            isMoving = true;
+            clearHighlights();
+
+            if (t.pos === -1 && diceValue === 6) {
+                t.pos = 0;
+                playSound('tuk');
+                renderTokens();
+                isMoving = false;
+                checkExtraTurnOrNext(true);
+            } else {
+                let steps = diceValue;
+                const interval = setInterval(() => {
+                    t.pos++;
+                    playSound('tuk');
+                    renderTokens();
+                    steps--;
+
+                    if (steps <= 0) {
+                        clearInterval(interval);
+                        isMoving = false;
+                        
+                        const killed = checkCapture(t);
+                        const isSix = (diceValue === 6);
+
+                        checkPlayerFinished(t.p);
+                        checkExtraTurnOrNext(isSix || killed);
+                    }
+                }, 180);
+            }
+        }
+
+        function checkCapture(t) {
+            if (t.pos === 56 || t.pos === -1) return false;
+            const destCoord = PATHS[t.p][t.pos];
+            const coordKey = `${destCoord[0]},${destCoord[1]}`;
+
+            if (STAR_POSITIONS.includes(coordKey)) return false;
+
+            let captured = false;
+            tokens.forEach(other => {
+                if (other.p !== t.p && other.pos >= 0 && other.pos < 56) {
+                    const otherCoord = PATHS[other.p][other.pos];
+                    if (otherCoord[0] === destCoord[0] && otherCoord[1] === destCoord[1]) {
+                        other.pos = -1;
+                        playSound('cut');
+                        captured = true;
+                    }
+                }
+            });
+            return captured;
+        }
+
+        function checkPlayerFinished(pIdx) {
+            const allHome = tokens.filter(t => t.p === pIdx).every(t => t.pos === 56);
+            if (allHome && !winnersRank.includes(pIdx)) {
+                winnersRank.push(pIdx);
+                playSound('win');
+                triggerFireworks();
+                
+                const rankText = winnersRank.length === 1 ? '1st 🥇' : winnersRank.length === 2 ? '2nd 🥈' : '3rd 🥉';
+                const t = LANG_TEXTS[currentLang];
+                document.getElementById('winner-msg').innerText = t.finished(pIdx, COLOR_NAMES[pIdx], rankText);
+                document.getElementById('winner-modal').style.display = 'flex';
+            }
+        }
+
+        function closeWinnerModal() {
+            document.getElementById('winner-modal').style.display = 'none';
+        }
+
+        function checkExtraTurnOrNext(extraTurn) {
+            if (winnersRank.length >= activePlayersCount - 1) {
+                const t = LANG_TEXTS[currentLang];
+                document.getElementById('status-text').innerText = t.gameComplete;
+                return;
+            }
+
+            if (extraTurn && !winnersRank.includes(turn)) {
+                hasRolled = false;
+                const t = LANG_TEXTS[currentLang];
+                document.getElementById('status-text').innerText = t.extraTurn(turn, COLOR_NAMES[turn]);
+                checkAndTriggerBot();
+            } else {
+                nextTurn();
+            }
+        }
+
+        function nextTurn() {
+            hasRolled = false;
+            document.getElementById('dice-result-val').innerText = '-';
+            do {
+                turn = (turn + 1) % activePlayersCount;
+            } while (winnersRank.includes(turn) && winnersRank.length < activePlayersCount);
+
+            updateUI();
+            checkAndTriggerBot();
+        }
+
+        function checkAndTriggerBot() {
+            if (isVsBot && turn === 1 && !winnersRank.includes(1)) {
+                setTimeout(() => {
+                    handleDiceClick(1);
+                }, 1000);
+            }
+        }
+
+        function saveGameState() {
+            const data = { activePlayersCount, isVsBot, turn, tokens, winnersRank, consecutiveSixes };
+            localStorage.setItem('ludoKungFinalSave', JSON.stringify(data));
+        }
+
+        function loadGameState() {
+            const data = JSON.parse(localStorage.getItem('ludoKungFinalSave'));
+            if (data) {
+                activePlayersCount = data.activePlayersCount;
+                isVsBot = data.isVsBot;
+                turn = data.turn;
+                tokens = data.tokens;
+                winnersRank = data.winnersRank || [];
+                consecutiveSixes = data.consecutiveSixes || 0;
+            }
+        }
+
+        function resumeGame() {
+            initGame(true);
+        }
+
+        let fwCtx, particles = [];
+        function initCanvasFireworks() {
+            const cvs = document.getElementById('fireworks-canvas');
+            cvs.width = window.innerWidth;
+            cvs.height = window.innerHeight;
+            fwCtx = cvs.getContext('2d');
+            loopFireworks();
+        }
+
+        function triggerFireworks() {
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: window.innerWidth / 2,
+                    y: window.innerHeight / 2,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    life: 100
+                });
+            }
+        }
+
+        function loopFireworks() {
+            requestAnimationFrame(loopFireworks);
+            if (!fwCtx) return;
+            fwCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                fwCtx.fillStyle = p.color;
+                fwCtx.beginPath();
+                fwCtx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                fwCtx.fill();
+                if (p.life <= 0) particles.splice(idx, 1);
+            });
+        }
+    </script>
+</body>
+</html>
